@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+script
+data/
+ocr/
+datasets/
+flag_env/
+nvembed_env
+ocr_env
+generate_output/
+MiniCPMV2.0
 *.bin
 *.safetensors
 

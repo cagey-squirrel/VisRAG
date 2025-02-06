@@ -1,0 +1,134 @@
+VisRag with both instructions and just text: recall 22.48 mrr 15.44
+VisRag with one  instruction  and just text: recall 21.12 mrr 13.53
+VisRag with one  instruction  and text + values: recall 24.64 mrr 15.37
+
+ChartQA
+Paper: BGE
+MRR@10 = .40
+Recal = 0.50
+
+Paper: VisRAG
+MRR = 0.59
+Recall = 0.72
+
+Paper: nvembed:
+MRR: = 0.5258
+Recall = 65.32
+
+My:
+NV-Embed (half):
+MRR@10 =  0.48087500552681606
+recal@10 =  0.5919220055710307
+
+
+
+
+
+InfoVQA:
+Paper: BGE
+MRR@10 = 0.6701
+recal@10 = 0.8465
+Paper: NV-Embed
+MRR@10 = 0.8170
+recal@10 = 0.9389
+Paper: VisRAG
+MRR@10 = 84.05
+recal@10 = 96.33
+Paper On my machine top1:
+MRR@10: 0.7697947214076246
+
+My:
+BGE with GPT4o text extract:
+MRR@10 =  0.7494222175673781
+recal@10 =  0.9115347018572825
+My with GPT4o text extract:
+MRR@10 =  0.8214906360067646
+recal@10 =  0.947702834799609
+NVEmbed with hybrid 0.7
+MRR@10 =  0.831585051746341
+recal@10 =  0.9545454545454546
+My at 1
+MRR@1 =  0.7737047898338221
+
+
+
+
+SlideVQA:
+Paper: 
+BGE:
+MRR@10 = 79.94
+recal@10 = 88.35
+NVEmbed
+91.73
+96.54
+VisRAG:
+91.71
+97.03
+On My Machine 
+0.9183265582655827
+0.9686
+@1
+MRR@1: 0.8768292682926829
+
+
+
+My:
+My: BGE: 
+MRR@10 =  84.03
+recal@10 =  94.08
+Mixed BGE:
+MRR@10 =  0.8650365369725127
+recal@10 =  0.9542682926829268
+NVEmbed
+MRR@10 =  0.9089314750290358
+recal@10 =  0.9670731707317073
+NVEmbed alpha 0.7:
+MRR@10 =  0.9183887437088654
+recal@10 =  0.9695121951219512
+My @1:
+MRR@10 =  0.7158536585365853
+recal@10 =  0.7158536585365853
+
+
+MP-Doc-VQA:
+Paper: 
+BGE
+50.21
+68.71
+NVEmbed:
+73.01
+89.52
+VisRAG
+77.65
+92.97
+OnMyMachine
+ndcg_cut_10              all     0.8137
+recall_10                all     0.9287
+MRR@10: 0.7763342963582449
+mrr at 1:
+MRR@1: 0.6913251729643427
+ndcg_cut_10              all     0.8137
+
+My:
+BGE:
+62.22
+79.67
+NVEmbed
+MRR@10 =  0.7468790390025084
+recal@10 =  0.8940926024481107
+NVEmbed 0.7:
+MRR@10 =  0.7871877560674785
+recal@10 =  0.9132517296434274
+NVEmbed 0.6:
+MRR@10 =  0.7835100990901945
+recal@10 =  0.9148483235763704
+My mrr at 1
+MRR@1 =  0.7440127727514635
+recal@1 =  same ofc
+
+
+
+
+
+
+

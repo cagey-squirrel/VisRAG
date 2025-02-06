@@ -1,0 +1,376 @@
+bash scripts/eval_retriever/eval.sh 512 2048 8 1 wmean causal ChartQA openbmb/MiniCPM-V-2
+bash scripts/eval_retriever/eval.sh 512 2048 8 1 wmean causal InfoVQA openbmb/MiniCPM-V-2
+bash scripts/eval_retriever/eval.sh 512 2048 8 1 wmean causal MP-DocVQA openbmb/MiniCPM-V-2
+bash scripts/eval_retriever/eval.sh 512 2048 8 1 wmean causal SlideVQA openbmb/MiniCPM-V-2
+bash scripts/eval_retriever/eval.sh 512 2048 8 1 wmean causal ChartQA openbmb/VisRag-Ret
+bash scripts/eval_retriever/eval.sh 512 2048 8 1 wmean causal MP-DocVQA openbmb/VisRag-Ret
+
+python scripts/eval_retriever/evalpy.py 512 2048 8 1 wmean causal ChartQA openbmb/VisRag-Ret
+python scripts/eval_retriever/evalpy.py 512 2048 8 1 wmean causal InfoVQA openbmb/VisRag-Ret
+python scripts/eval_retriever/evalpy.py 512 2048 8 1 wmean causal SlideVQA openbmb/VisRag-Ret
+python scripts/eval_retriever/evalpy.py 512 2048 8 1 wmean causal ArxivQA openbmb/VisRag-Ret
+
+python scripts/generate/generate.py --model_name MiniCPMV2.0 --dataset_name MP-DocVQA --rank 0 --world_size 1 --topk 1 --task_type weighted_selection --results_root_dir "/home/dzi/VisRAG.git/VisRAG/data/checkpoints/mp_doc" --model_name_or_path openbmb/MiniCPM-V-2 --output_dir ""
+python scripts/generate/generate.py --model_name MiniCPMV2.0 --dataset_name MP-DocVQA --rank 0 --world_size 1 --topk 1 --task_type weighted_selection --results_root_dir "/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-02-05-212525-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1" --model_name_or_path openbmb/MiniCPM-V-2 --output_dir ""
+
+python scripts/generate/generate.py --model_name MiniCPMV2.0 --dataset_name ChartQA --rank 0 --world_size 1 --topk 1 --task_type weighted_selection --results_root_dir "/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-01-15-132815-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1" --model_name_or_path openbmb/MiniCPM-V-2 --output_dir "/home/dzi/VisRAG.git/VisRAG/generate_output"
+
+    name = "MiniCPM-V-2"
+    output_dir = ""
+    model_name_or_path = "openbmb/MiniCPM-V-2"
+
+    import sys
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
+    help="Model architecture used for "
+    if task_type != 'page_concatenation':
+            if model_name == 'gpt4o' and api_key == None:
+                raise Exception("api_key is None! Please write your OpenAI API key.")
+eval "$(pyenv virtualenv-init -)"
+                
+/home/dzi/VisRAG/scripts/generate/generate.py
+install pyenv 
+
+
+# NVIDIA CUDA TOOLKIT
+export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
+
+CHECKPOINT_DIR="~/VisRAG/data/checkpoints"
+
+
+
+Number of images: 1509 in test set 
+They have 718 questions in ChartQA dataset about 500 images
+
+Number of images in InfoVQA: 5455
+Number of questions: 2046
+
+
+InfoVQA:
+2046 questions
+459 images
+
+MP - Doc:
+1879 - questions
+741 - images
+
+SlideVQA
+1284 - images
+1640 - questions
+
+
+
+
+query: What is the average  Share of individuals who downloaded purchased media online in Great Britain in 2013  by type of media?
+responds:52
+answer:56
+ChartQA:718_Accuracy:0.2883008356545961
+
+
+My results seems to differ gratly from the ones in the paper for the OCR models
+Reason for this can be that their OCR is better than the one I am using 
+
+
+    # texts = []
+    # for q in query_dataset:
+    #     print(q)
+    #     texts.append(q)
+    #     #texts.append(q['text'][len('Represent this query for retrieving relevant documents: '):])
+
+    # import pickle
+    # with open('slide_questions_paper.pkl', "wb") as file:
+    #     pickle.dump(texts, file)
+
+    # #input(f'desi be i majki P')
+    # #print(len(corpus_dataset))
+
+    # exit()
+
+
+You tested whether you questions are the same as their, but you should also test if their corpus is the same as yours
+
+
+
+
+
+
+
+    my_f = read_pkl('/home/dzi/VisRAG.git/VisRAG/chart_qa_filtered_ids_to_text_and_values.pkl')
+    list_of_unlabeled_images = []
+    total = 0
+    my_f['11627839005738'] = """Death rates from conflict and terrorism, 2000 to 2014
+Annual number of deaths from conflict and terrorism per 100,000 residents of all ages and both sexes
+2000,2002,2004,2006,2008,2010,2012,2014, North Korea"""
+    my_f['47728567002301'] = """Sugar beet yields, 1961 to 1981
+Sugar beet yields measured in tons per hectare
+Country,1961,1965,1970,1975,1981
+Asia,13.374,19.3373,22.3738,21.1754,23.7579"""
+    my_f['47731310020871'] = """Number of people with access to at least basic drinking water, 2008 to 2014
+Number of people using at least a basic drinking water source; that is improved source within 30 minutes round trip to collect water 2008,2009,2010,2011,2012,2013,2014
+Eritrea,Fiji, United States, Virgin Islands"""
+    my_f['two_col_100934'] = """Characteristic,Group turnover share
+Retail,81%
+Wholesale,17%
+Rendered services,2%"""
+    my_f['two_col_101342'] = """Share of respondents
+Definitely unlikely,26%
+Rather unlikely,35%
+Very likely,14%
+Rather likely,26%"""
+    my_f['two_col_101343'] = """Characteristic,Characteristic.1
+Paramount,2
+Sony,1
+Fox,4
+Universal,3
+Dinsey,1
+Warner Bros.,2"""
+    my_f['two_col_101579'] = """Top 100 pins in 2018
+Recipe,75%
+Crafts,5%
+Comedy,4%
+Fitness/Health,3%
+DIY Home,3%
+Other*,10%"""
+    my_f['two_col_101826'] = """Net sales share
+Companion animal,69%
+Aquatics,31%"""
+    my_f['two_col_101945'] = """Share of respondents
+Uncomfortable,38%
+Moderately comfortable,24%
+Comfortable,29%
+Don't know,9%"""
+    my_f['two_col_102995'] = """Share of M&A deal values in 2019
+UK,26%
+Germany,16%
+France,14%
+Spain,11%
+Sweden,7%
+Netherlands,5%
+Denmark,4%
+Italy,4%
+Finland,3%
+Belgium,2%
+Switzerland,2%
+Turkey,2%
+Other,4%
+Cyprus,0%"""
+    my_f['two_col_103259'] = """Share of coaches
+Male,73.5%
+Female,26.5%"""
+    my_f['two_col_103366'] = """Share of respondents
+Monthly,41.2%
+Weekly,37.8%
+Daily,18.2%
+Stopped using,2.8%"""
+    my_f['two_col_104148'] = """Share of users
+Female,53.5%
+Male,46.5%"""
+    my_f['two_col_104308'] = """Share of respondents
+Yes,16%
+"No, but I plan to soon",11%
+"No, and I don't plan to",73%"""
+    my_f['two_col_104528'] = """Share of respondents
+Very well,32%
+Somewhat well,50%
+Somewhat poorly,13%
+Very poorly,4%
+I do not know,2%"""
+    my_f['two_col_104702'] = """Share of respondents
+Definitely yes,81.8%
+Rather so,13.2%
+Rather not,2.8%
+Definitely not,2.3%"""
+    my_f['two_col_21033'] = """Location,Percentage of facilities
+United States,28%
+European Union,26%
+India,18%
+China,13%
+Canada,2%
+Rest of the world,13%"""
+    my_f['two_col_21898'] = """Share of deaths
+Brussels,13%
+Wallonia,36.6%
+Flanders,50.4%"""
+    my_f['two_col_21909'] = """Share of revenue
+Europe,40%
+North America,24%
+Asia,24%
+South America,6%
+Africa and Oceania,6%"""
+    my_f['two_col_22179'] = """Investment received by Mexico
+Europe,40%
+North America,24%
+Asia,24%
+South America,6%
+Africa and Oceania,6%"""
+    my_f['two_col_22205'] = """Share of Swedish companies market
+LÃ¤nsfÃ¶rsÃ¤kringar,30.3%
+If SkadefÃ¶rsÃ¤kring,18.2%
+Folksam,16.4%
+Trygg-Hansa,13.7%
+Moderna,3.3%
+Other Swedish companies,4.3%
+Other,13.8%"""
+    my_f['two_col_22308'] = """Share of respondents
+0 - 5 %,21%
+5 - 10 %,41%
+10 - 15 %,21%
+15 - 20 %,12%
+More than 20 %,"""
+    my_f['two_col_23750'] = """Walmart share of net sales in U.S.
+Grocery,56.3%
+General merchandise,32.3%
+Health and wellness,10.4%
+Other,1%"""
+    my_f['two_col_3017'] = """How much are people willing to wait for
+Less than a minute,4%
+1-5 mins,29%
+6-10 mins,31%
+11-20 mins,27%
+21-30 mins,7%
+31-60 mins,1%"""
+    my_f['two_col_41814'] = """Revenue share
+United States,23.7%
+United Kingdom,15.57%
+Italy,10.63%
+China,6.63%
+France,6.07%
+Australia,5.89%
+Germany,5.33%
+Denmark,0.16%
+Other,26%"""
+    my_f['two_col_41953'] = """Retail revenue share
+Fast-moving consumer goods,66%
+Hardlines & leisure goods,19%
+Apparel & Accessories,10%
+Diversified,5%"""
+    my_f['two_col_4223'] = """Share of respondents
+Yes,12.7%
+No,87.3%
+"""
+    my_f['two_col_4340'] = """Amount of excercise during covid pandemic in U.S.
+More often than usual,17%
+About the same as usual,53%
+Less often than usual,27%
+Not sure,3%"""
+    my_f['two_col_44004'] = """Expenditure share
+Beef,26%
+Poultry,19%
+Pork,19%
+Fish and seafood,16%
+Eggs,7%
+Other meats,13%"""
+    my_f['two_col_474'] = """Number of offenders
+Male,10335
+Female,1408
+Unknown,4502"""
+    my_f['two_col_4872'] = """Share of deaths from covid19 in Italy
+0-19 years,0%
+20-29 years,0.1%
+30-39 years,0.2%
+40-49 years,0.9%
+50-59 years,3.5%
+60-69 years,10.2%
+70-79 years,25.2%
+80-89 years,40.5%
+90 years and older,19.4%"""
+    my_f['two_col_592'] = """Share of internet users age groups
+18-24,18%
+25-34,32%
+35-44,19%
+45-54,14%
+55-64,10%
+65+,7%"""
+    my_f['two_col_60182'] = """Share of respondents
+No. I don't have any,37%
+Yes. I have a few,35%
+Yes. lots of them,24%
+What is a vinyl record?,4%"""
+    my_f['two_col_60276'] = """Share of leather and hide world exports in value
+United States,26.8%
+Australia,9.3%
+France,7.1%
+Germany,6.1%
+Netherlands,4.7%
+Canada,4%
+Spain,3.5%
+Other countries,38.5%
+"""
+    my_f['two_col_60299'] = """Share of spirit drinks revenue
+Other,10.3%
+Cider,5.1%
+Wine,11%
+Spirits and spirit-based drinks,15.7%
+Food,25.5%
+Beer,32.4%"""
+    my_f['two_col_60392'] = """How do people stay updated
+Internet,35%
+Social media,26%
+Television,21%
+Friends & family,7%
+Newspapers,6%
+Other,4%
+I don't keep myself updated,2%"""
+    my_f['two_col_60514'] = """Market share in software companies
+Application,52.3%
+Infrastructure software,17.7%
+SaaS,11.9%
+OS,6.6%
+Custom,5.8%
+Database,4.1%
+Analytics,1.5%"""
+    my_f['two_col_61269'] = """Market share in vacuums
+Upright vacuums,51%
+Canister vacuums,28%
+Robot vacuum cleaners,11%
+"Other (hand-held, tank-mounted, etc.)",10%"""
+    my_f['two_col_61941'] = """Would you spend time in Poland
+Only in Poland,66%
+Only abroad,20%
+In Poland and abroad,7%
+Hard to say,7%"""
+    my_f['two_col_80856'] = """Safety measures against covid19
+Compulsary checks,37%
+Work from home,30%
+Others,33%"""
+    my_f['two_col_81125'] = """Mileage share of passenger transportation, Europe
+Passenger cars,71.7%
+Air,9.6%
+Bus & Coach,8%
+Railway,6.9%
+Powered two-wheelers,1.8%
+Tram & Metro,1.5%
+Sea,0.4%"""
+    my_f['two_col_81161'] = """Have you downloaded more or less apps during covid19
+Same,54%
+More,24%
+Less,22%"""
+    my_f['two_col_82370'] = """Share of revenue
+North America,41%
+EMEA*,26%
+Greater China,19%
+APLA**,14%"""
+    my_f['two_col_83125'] = """Share of respondents
+West U.S.,69%
+South U.S.,68%
+Canada,68%
+Northeast U.S.,65%
+Midwest U.S.,65%"""
+    for k in my_f:
+        #print(f'{k}:')
+        #print(f'{my_f[k]}\n\n')
+        text = my_f[k]
+        if len(text) < 10:
+            print(f'{k}: {text}')
+            total += 1
+            list_of_unlabeled_images.append(k)
+    save_as_pkl("/home/dzi/VisRAG.git/VisRAG/chart_qa_filtered_ids_filled_empty_to_text_and_values.pkl", my_f)
+    print(f'\n total = {total}')
+    #print(my_f)

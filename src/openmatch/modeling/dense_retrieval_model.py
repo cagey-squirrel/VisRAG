@@ -245,14 +245,14 @@ class DRModel(nn.Module):
         # load local
         config = None
         head_q = head_p = None
-        config_json = json.load(open(os.path.join(model_name_or_path, 'config.json')))
+        # config_json = json.load(open(os.path.join(model_name_or_path, 'config.json')))
 
-        assert "_name_or_path" in config_json or "model_name_or_path" in config_json, "building model will need to determine the modeling file, please make sure _name_or_path or model_name_or_path is in the config.json"
-        if "_name_or_path" in config_json:
-            name = config_json["_name_or_path"]
-        else:
-            name = config_json["model_name_or_path"]
-
+        # assert "_name_or_path" in config_json or "model_name_or_path" in config_json, "building model will need to determine the modeling file, please make sure _name_or_path or model_name_or_path is in the config.json"
+        # if "_name_or_path" in config_json:
+        #     name = config_json["_name_or_path"]
+        # else:
+        #     name = config_json["model_name_or_path"]
+        name = model_name_or_path
 
         # ------------- config and model --------------
         if "siglip" in name or "SigLIP" in name:
@@ -276,7 +276,7 @@ class DRModel(nn.Module):
             vision_config = SiglipVisionConfig.from_pretrained(model_name_or_path)
             config = config_cls.from_text_vision_configs(text_config, vision_config)
         else:
-            config = config_cls.from_pretrained(model_name_or_path)
+            config = config_cls.from_pretrained(model_name_or_path, trust_remote_code=True)
         
         # add attention pattern 
         if model_args.attention == "bidirectional":

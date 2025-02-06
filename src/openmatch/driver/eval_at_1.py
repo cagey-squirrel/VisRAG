@@ -42,14 +42,14 @@ def main():
     setup_logging(encoding_args, model_args)
     #name = get_model_name(model_args)
     name = "MiniCPM-V-2"
-    tokenizer = setup_tokenizer(name, model_args)
-    model = setup_model(encoding_args, model_args)
+    #tokenizer = setup_tokenizer(name, model_args)
+    #model = setup_model(encoding_args, model_args)
     
-    if encoding_args.phase in ["encode_query", "encode"]:
-        encode_query(data_args, encoding_args, tokenizer, model)          
+    #if encoding_args.phase in ["encode_query", "encode"]:
+    #    encode_query(data_args, encoding_args, tokenizer, model)          
         
-    if encoding_args.phase in ["encode_corpus", "encode"]:
-        encode_corpus(data_args, encoding_args, tokenizer, model)
+    #if encoding_args.phase in ["encode_corpus", "encode"]:
+    #    encode_corpus(data_args, encoding_args, tokenizer, model)
     
     if encoding_args.phase == "retrieve":
         retrieve(data_args, encoding_args)
@@ -213,17 +213,17 @@ def retrieve(data_args, encoding_args):
 
     qrels = get_qrels(data_args)
     
-    logger.info("Retrieving")
-    run = distributed_parallel_retrieve(args=encoding_args, topk=encoding_args.retrieve_depth)
+    #logger.info("Retrieving")
+    #run = distributed_parallel_retrieve(args=encoding_args, topk=encoding_args.retrieve_depth)
     
     # save trec file
-    if encoding_args.trec_save_path is None:
-        encoding_args.trec_save_path = os.path.join(encoding_args.output_dir, f"test.{encoding_args.process_index}.trec")
+    #if encoding_args.trec_save_path is None:
+    #    encoding_args.trec_save_path = os.path.join(encoding_args.output_dir, f"test.{encoding_args.process_index}.trec")
     
-    save_as_trec(run, encoding_args.trec_save_path)
+    #save_as_trec(run, encoding_args.trec_save_path)
 
-    if encoding_args.world_size > 1:
-        torch.distributed.barrier()
+    #if encoding_args.world_size > 1:
+    #    torch.distributed.barrier()
     
     # collect trec file and compute metric for rank = 0
     if encoding_args.process_index == 0: 
@@ -273,14 +273,18 @@ def get_qrels(data_args):
 
 def save_results(encoding_args, qrels):
     # use glob library to to list all trec files from encoding_args.output_dir:
-    #partitions = glob.glob(os.path.join("/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-02-05-212525-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1/MP-DocVQA", "test.*.trec"))
-    #partitions = glob.glob(os.path.join("/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-01-18-140834-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1/InfoVQA", "test.*.trec"))
-    partitions = glob.glob(os.path.join(encoding_args.output_dir, "test.*.trec"))
+    #partitions = glob.glob(os.path.join(encoding_args.output_dir, "test.*.trec"))
+    partitions = glob.glob(os.path.join("/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-02-05-212525-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1/MP-DocVQA", "test.*.trec"))
+    #partitions = glob.glob(os.path.join("/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-02-06-214121-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1/SlideVQA", "test.*.trec"))
     logger.info(f"trec files: {partitions}")
+    print(f"trec files: {partitions}")
     run = {}
     for part in partitions:
         print("loading", part)
         run.update(load_from_trec(part))
+    print(f'run = {run}')
+    mrr_at_10 = eval_mrr(qrels, run, 1)['all']
+    print(f'MRR@10: {mrr_at_10}')
     
     evaluator = pytrec_eval.RelevanceEvaluator(
         qrels, {"ndcg_cut.10", "recall.10"})
@@ -304,8 +308,7 @@ def save_results(encoding_args, qrels):
             ),
         )
                     
-    mrr_at_10 = eval_mrr(qrels, run, 10)['all']
-    print(f'MRR@10: {mrr_at_10}')
+    
 
 
 def get_model_name(model_args):
