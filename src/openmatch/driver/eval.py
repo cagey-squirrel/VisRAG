@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    print(f'\n\n\nMain started \n\n\n')
     parser = HfArgumentParser((ModelArguments, DataArguments, EncodingArguments))
     
     model_args, data_args, encoding_args = parser.parse_args_into_dataclasses()
@@ -39,9 +40,12 @@ def main():
 
     setup_output_dir(encoding_args)
     setup_logging(encoding_args, model_args)
-    name = get_model_name(model_args)
+    #name = get_model_name(model_args)
+    name = "MiniCPM-V-2"
     tokenizer = setup_tokenizer(name, model_args)
     model = setup_model(encoding_args, model_args)
+    model = None
+    tokenizer = None
     
     if encoding_args.phase in ["encode_query", "encode"]:
         encode_query(data_args, encoding_args, tokenizer, model)          
@@ -157,6 +161,12 @@ def encode_query(data_args, encoding_args, tokenizer, model):
     )
 
     logger.info("Encoding query")
+    data_list = []
+    for q in query_dataset:
+        question = q['text'][len("Represent this query for retrieving relevant documents: "):]
+        qid = q['id']
+        print(q)
+    input('q')
     distributed_parallel_embedding_inference(
         dataset=query_dataset,
         model=model,
@@ -271,6 +281,8 @@ def get_qrels(data_args):
 
 def save_results(encoding_args, qrels):
     # use glob library to to list all trec files from encoding_args.output_dir:
+    #partitions = glob.glob(os.path.join("/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-02-05-212525-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1/MP-DocVQA", "test.*.trec"))
+    #partitions = glob.glob(os.path.join("/home/dzi/VisRAG.git/VisRAG/data/checkpoints/eval-2025-01-18-140834-maxq-512-maxp-2048-bsz-8-pooling-wmean-attention-causal-gpus-per-node-1/InfoVQA", "test.*.trec"))
     partitions = glob.glob(os.path.join(encoding_args.output_dir, "test.*.trec"))
     logger.info(f"trec files: {partitions}")
     run = {}

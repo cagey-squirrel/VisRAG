@@ -59,7 +59,7 @@ def calculate_metrics_slide(top10_indices_path, qs_as_docids, chart_qa_id_to_tex
     print(f'recal@10 =  {recal}')
 
 
-def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, data, path, topk_scores):
+def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, data, path):
     
     ids = list(chart_qa_id_to_text.keys())
     ids = [id.split(".jpeg")[0] for id in ids]
@@ -81,6 +81,7 @@ def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, dat
     #    else:
     #        nottoal += 1
     #print(f'total = {total} nototal = {nottoal}')
+    names = docids.copy()
     if data == "mp":
         docids = [docid[0] for docid in docids]
         docids = [docid.split(".jpeg")[0] for docid in docids]
@@ -94,6 +95,14 @@ def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, dat
             new_list = []
             for d in did:
                 new_list.append(ids.index(d.split('.jpg')[0]))
+            docid_list.append(new_list)
+        docids = docid_list
+    elif data == "plot":
+        docid_list = []
+        for did in docids:
+            new_list = []
+            for d in did:
+                new_list.append(ids.index(d.split('.png')[0]))
             docid_list.append(new_list)
         docids = docid_list
     else:
@@ -117,7 +126,7 @@ def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, dat
     count = 0
     question_to_guesses = {}
     recal_array = []
-    for indices, docid, q, s in zip(top10_indices, docids, questions, topk_scores):
+    for indices, docid, q, name in zip(top10_indices, docids, questions, names):
         found = 0
         for i, index in enumerate(indices):
             if type(docid) == list:
@@ -134,7 +143,7 @@ def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, dat
             #break
         
         guesses = {}
-        for i, (index, score) in enumerate(zip(indices, s)):
+        for i, index in enumerate(indices):
             img_name = ids[index]
             guesses[img_name] =  1 / (i+1)
             #print(f'{img_name}: {score}')
@@ -143,7 +152,7 @@ def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, dat
             non_found_total += 1
             # Easy find
             #print(f'For question {q} with index {count}, docid {docid} and docid name {name} the document was not found')
-            #print(f'Found documets {[ids[did] for did in indices]}\n')
+            #print(f'Found documets {[names[int(did)] for did in indices]}\n')
             non_found_list.append(count)
         
         question_to_guesses[q] = guesses
@@ -152,10 +161,11 @@ def calculate_metrics(top10_indices_path, qs_as_docids, chart_qa_id_to_text, dat
         count += 1
     mrr /= len(docids)
     recal = total_found / len(docids)
-    print(f'MRR@10 =  {mrr}')
-    print(f'recal@10 =  {recal}\n')
-    save_as_pkl(path, question_to_guesses)
-    #plt.plot(recal_array)
+    print(str(mrr*100)[:5])
+    #print(f'MRR@10 =  {mrr}')
+    #print(f'recal@10 =  {recal}\n')
+    #save_as_pkl(path, question_to_guesses)
+    #plt.plot(np.cumsum(recal_array)/len(questions))
     #plt.show()
     #print(question_to_guesses)
     #print(len(non_found))
@@ -216,15 +226,13 @@ def calculate_question_to_corpus_similarities(chart_qa_id_to_text, qs_as_docids,
     name = save_path.split('.pkl')[0]
 
     
-    
-    
-    query_embeddings = batch_embed(queries, model, query_prefix, step=30)
-    save_as_pkl(f'{name}_just_query_embeddings.pkl', query_embeddings)
+    passage_embeddings = batch_embed(corpus, model, passage_prefix, step=1)
+    save_as_pkl(f'{name}_just_passage_embeddings.pkl', passage_embeddings)
     exit()
 
     # get the embeddings
-    passage_embeddings = batch_embed(corpus, model, passage_prefix, step=5)
-    save_as_pkl(f'{name}_just_passage_embeddings.pkl', passage_embeddings)
+    query_embeddings = batch_embed(queries, model, query_prefix, step=30)
+    save_as_pkl(f'{name}_just_query_embeddings.pkl', query_embeddings)
 
     scores = (query_embeddings @ passage_embeddings.T) * 100
 
@@ -253,6 +261,12 @@ def preprocess_text(text):
     
     # Remove punctuation
     #text = re.sub(r'-', ' ', text) 
+    #old_text = text
+    #text = re.sub(r'[^\x00-\x7F]', '', text)
+    #text = re.sub(r'\b\d+(\.\d+)?%\b|\b[1-9]\d{3}\b', '', text)
+
+    #text = re.sub(r'\(', ' ', text) 
+    text = re.sub(r'\bsources:\b.*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'[^\w\s]', '', text)
     text = " ".join(list(set(text.split(' '))))
 
@@ -315,36 +329,51 @@ def combine(dense, sparse, path, alpha=0.5):
     return topk_scores
 
 
-def test_hybrid(data='mp'):
+def test_hybrid(id_to_text, qs_as_docids, path, data='mp'):
+
+    #for id in id_to_text:
+    #    v = id_to_text[id]
+    #    old_v = v
+    #    v = re.sub(r'sources:.*', '', v, flags=re.IGNORECASE | re.DOTALL)
+    #    if "sources:" in old_v.lower():
+    #        print(f'sources')
+    #    if v != old_v:
+    #        print(f'diff: {len(v) - len(old_v)}')
+    #        #print(old_v)
+    #        #print(v)
+    #        print()
+    #    id_to_text[id] = v
     
     questions_train = None
     # InvoVQA
     if data == 'info':
-        corpus_path = 'datasets/info_vqa/temp_files/infovqa_id_to_gpt_text.pkl'
-        q_and_a_path = 'datasets/info_vqa/infographics_filtered_data_list.pkl'
-        path_to_dense_embeddings = "datasets/info_vqa/temp_files/info_vqa_nvembed_gpt_extractions_just_query_embeddings.pkl"
+        path_to_dense_embeddings = "datasets/info_vqa/temp_files/info_vqa_nvembed_gpt_extractions_2_just_query_embeddings.pkl"
         
         #path_to_dense_corpus = "info_vqa_nvembed_gpt_descriptions_just_passage_embeddings.pkl"
-        #corpus_path = 'infovqa_id_to_gpt_decriptions_fixed.pkl'
         path_to_dense_corpus = "datasets/info_vqa/temp_files/info_vqa_nvembed_gpt_extractions_just_passage_embeddings.pkl"
+        path_to_dense_corpus = "/home/dzi/VisRAG.git/VisRAG/info_vqa_removed_sources_just_passage_embeddings.pkl"
         path_to_sparse = "info_vqa_sparse.pkl"
         save_path = "info_vqa_combined_nvembed.pkl"
-        questions_train = read_pkl('info_questions_train.pkl')
+        #questions_train = read_pkl('info_questions_train.pkl')
         
 
     if data == 'mp':
-        corpus_path = 'datasets/mp_vqa/mp_vqa_image_to_gpt_text.pkl'
-        q_and_a_path = 'datasets/mp_vqa/mp_vqa_data_list.pkl'
         path_to_dense_embeddings = "datasets/mp_vqa/temp_files/mp_doc_vqa_nvembed_gpt_extractions_just_query_embeddings.pkl"
         path_to_dense_corpus = "datasets/mp_vqa/temp_files/mp_doc_vqa_nvembed_gpt_extractions_just_passage_embeddings.pkl"
         path_to_sparse = "datasets/mp_vqa/temp_files/mp_vqa_sparse.pkl"
         save_path = "datasets/mp_vqa/temp_files/mp_vqa_combined_nvembed.pkl"
 
 
+    if data == 'chart':
+        name = path.split('.pkl')[0]
+        path_to_dense_corpus = f'{name}_just_passage_embeddings.pkl'
+        path_to_dense_embeddings = f'{name}_just_query_embeddings.pkl'
+        path_to_sparse = "datasets/chart_qa/temp_data/chart_qa_sparse.pkl"
+        save_path = "datasets/chart_qa/temp_data/chart_qa_combined_nvembed.pkl"
+        save_path = "chart_qa_new_order_filled.pkl"
+
+
     if data == 'slide':
-       
-        corpus_path = 'datasets/slide_vqa/slide_vqa_image_to_gpt_text.pkl'
-        q_and_a_path = 'datasets/slide_vqa/slide_vqa_data_list.pkl'
         path_to_dense_embeddings = "datasets/slide_vqa/temp_data/slide_vqa_nvembed_gpt_extractions_just_query_embeddings.pkl"
         path_to_dense_embeddings = "slide_vqa_nvembed_gpt_text_just_query_embeddings.pkl"
         path_to_dense_corpus = "datasets/slide_vqa/temp_data/slide_vqa_nvembed_gpt_extractions_just_passage_embeddings.pkl"
@@ -352,69 +381,87 @@ def test_hybrid(data='mp'):
         path_to_sparse = "datasets/slide_vqa/temp_data/slide_vqa_sparse.pkl"
         save_path = "datasets/slide_vqa/temp_data/slide_vqa_combined_nvembed.pkl"
 
-    chart_qa_id_to_text = read_pkl(corpus_path)
-    print(f'len(chart_qa_id_to_text) = {len(chart_qa_id_to_text)}')
-    qs_as_docids = read_pkl(q_and_a_path)
-    print(f'len(qs_as_docids) = {len(qs_as_docids)}')
-    keyword_search(chart_qa_id_to_text, qs_as_docids, path_to_sparse, questions_train=questions_train)
+
+    if data == 'plot':
+        corpus_path = 'datasets/plot_qa/plot_qa_id_to_gpt_text.pkl'
+        q_and_a_path = 'datasets/plot_qa/plot_qa_datalist.pkl'
+        path_to_dense_embeddings = 'datasets/plot_qa/temp_files/plot_qa_questions_just_query_embeddings.pkl'
+        path_to_dense_corpus = "datasets/plot_qa/temp_files/plotqa_total_corpus_embeddings.pkl"
+        path_to_sparse = "plot_qa_sparse.pkl"
+        save_path = "plot_qa_combined_nvembed.pkl"
+
+    
+    
+    keyword_search(id_to_text, qs_as_docids, path_to_sparse, questions_train=questions_train)
     
     dense = calculate_scores(path_to_dense_embeddings, path_to_dense_corpus)
     dense = dense.detach().cpu().numpy()
     sparse = read_pkl(path_to_sparse)
 
-    alphas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-    alphas = [0.5]
-    alphas = [1]
+    alphas = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+    #alphas = [0.7]
+    #alphas = [1]
     save_question_to_guesses_path = f"{data}_question_to_guesses.pkl"
     for alpha in alphas:
         topk_scores = combine(dense=dense, sparse=sparse, path=save_path, alpha=alpha)
-        calculate_metrics(save_path, qs_as_docids, chart_qa_id_to_text, data, save_question_to_guesses_path, topk_scores)
+        calculate_metrics(save_path, qs_as_docids, id_to_text, data, save_question_to_guesses_path)
 
 
-def main():
-
-    
-
-    #corpus_path = 'datasets/chart_qa/chart_qa_ids_to_text_and_values.pkl'
-    #q_and_a_path = "chart_qa_qs_as_docd.pkl"
-
-    #corpus_path = 'chart_qa_filtered_ids_to_text_and_values.pkl'
-    #q_and_a_path = "chart_qa_qs_as_docd.pkl"
-
-    #corpus_path = 'datasets/chart_qa/temp_data/chart_qa_filtered_ids_filled_empty_to_text_and_values.pkl'
-    #q_and_a_path = "datasets/chart_qa/temp_data/chart_qa_qs_as_docd.pkl"
+def encode_and_metrics(chart_qa_id_to_text, qs_as_docids, save_path, data):
+    calculate_question_to_corpus_similarities(chart_qa_id_to_text, qs_as_docids, save_path)
+    #calculate_metrics_slide(save_path, qs_as_docids, chart_qa_id_to_text)
+    calculate_metrics(save_path, qs_as_docids, chart_qa_id_to_text, data, None)
 
 
-    #corpus_path = 'datasets/info_vqa/temp_files/infovqa_id_to_gpt_text.pkl'
-    #corpus_path = 'infovqa_id_to_gpt_decriptions_fixed.pkl'
-    #q_and_a_path = 'datasets/info_vqa/infographics_filtered_data_list.pkl'
+def main(data):
+    if data == "plot":
+        corpus_path = "/home/dzi/VisRAG.git/VisRAG/plotqa_0_2500.pkl"
+        corpus_path = "/home/dzi/VisRAG.git/VisRAG/plotqa_image_name_to_text_2000_4500.pkl"
+        corpus_path = "/home/dzi/VisRAG.git/VisRAG/plotqa_image_name_to_text_4500_7000.pkl"
+        corpus_path = "/home/dzi/VisRAG.git/VisRAG/plotqa_image_name_to_text_7000_8000.pkl"
+        corpus_path = "/home/dzi/VisRAG.git/VisRAG/plotqa_full_image_name_to_text_8000_9000.pkl"
+        corpus_path = "/home/dzi/VisRAG.git/VisRAG/plotqa_image_name_to_text_9500_end.pkl"
+        corpus_path = "/home/dzi/VisRAG.git/VisRAG/plotqa_image_name_to_text_9000_9500.pkl"
+        save_path = "plot_qa_test.pkl"
 
-    corpus_path = 'datasets/slide_vqa/slide_vqa_image_to_gpt_text.pkl'
-    q_and_a_path = 'datasets/slide_vqa/slide_vqa_data_list.pkl'
+        q_and_a_path = "/home/dzi/VisRAG.git/VisRAG/datasets/plot_qa/plot_qa_datalist.pkl"
+        save_path = ""
 
-    #corpus_path = 'mp_vqa_image_to_gpt_text.pkl'
-    #q_and_a_path = 'mp_vqa_data_list.pkl'
+    if data == 'info':
+        corpus_path = 'datasets/info_vqa/infovqa_id_to_gpt_text.pkl'
+        #corpus_path = 'infovqa_id_to_gpt_decriptions_fixed.pkl'
+        q_and_a_path = 'datasets/info_vqa/infographics_filtered_data_list.pkl'
+        save_path = "info_vqa_removed_sources.pkl"
+
+    if data == 'slide':
+        corpus_path = 'datasets/slide_vqa/slide_vqa_image_to_gpt_text.pkl'
+        q_and_a_path = 'datasets/slide_vqa/slide_vqa_data_list.pkl'
+        save_path = ""
+
+    if data == 'chart':
+        q_and_a_path = "datasets/chart_qa/temp_data/chart_qa_qs_as_docd.pkl"
+        corpus_path = 'datasets/chart_qa/temp_data/chart_qa_filtered_ids_filled_empty_to_text_and_values.pkl'
+        corpus_path = "datasets/chart_qa/chart_qa_new_ids_to_text.pkl"
+        corpus_path = "datasets/chart_qa/chart_qa_new_ids_to_text_filled.pkl"
+        save_path = "chart_qa_new_order_filled.pkl"
+
+    if data == 'mp':
+        corpus_path = 'datasets/mp_vqa/mp_vqa_image_to_gpt_text.pkl'
+        q_and_a_path = 'datasets/mp_vqa/mp_vqa_data_list.pkl'
+        save_path = ""
 
     # Dictionary which maps image_id to text on that image
-    chart_qa_id_to_text = read_pkl(corpus_path)
-    print(f'len(chart_qa_id_to_text) = {len(chart_qa_id_to_text)}')
+    id_to_text = read_pkl(corpus_path)
+    print(f'len(chart_qa_id_to_text) = {len(id_to_text)}')
+
     
-    #save_path = "mp_doc_vqa_nvembed_gpt_extractions.pkl"
-    #save_path = "datasets/chart_qa/temp_data/chart_qa_top10_englrg_text_and_values_human_filtered_filtered_corpus_added_empty.pkl"
-    #save_path = "datasets/chart_qa/temp_data/chart_qa_top10_nvembed_filtered_corpus_filled_missing.pkl"
+
     
-    save_path = "slide_vqa_nvembed_gpt_descriptions.pkl"
-    # This is a list containing a dict for each question
-    # Each dict contains at least three fields
-    # question, answer, docid
-    # docid is the id of the image that contains the answer
     qs_as_docids = read_pkl(q_and_a_path)
     print(f'len(qs_as_docids) = {len(qs_as_docids)}')
 
-    calculate_question_to_corpus_similarities(chart_qa_id_to_text, qs_as_docids, save_path)
-    #calculate_metrics_slide(save_path, qs_as_docids, chart_qa_id_to_text)
-    #calculate_metrics(save_path, qs_as_docids, chart_qa_id_to_text)
-
+    #encode_and_metrics(id_to_text, qs_as_docids, save_path, data)
+    test_hybrid(id_to_text, qs_as_docids, save_path, data)
 
     # [[87.42693328857422, 0.46283677220344543], [0.965264618396759, 86.03721618652344]]
 import json
@@ -458,5 +505,5 @@ def testing_2():
 
 if __name__ == "__main__":
     #testing_2()
-    test_hybrid('slide')
-    #main()
+    #test_hybrid('info')
+    main('info')

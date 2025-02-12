@@ -10,6 +10,7 @@ from io import BytesIO
 from transformers import AutoTokenizer as Tokenizer_class
 from openmatch.generation_utils import get_flatten_table, preprocess_text, is_numeric_data, is_within_5_percent, horizontal_concat, vertical_concat
 from datasets import load_dataset
+#from util import *
 
 
 def images_to_base64_list(image_list):
@@ -44,6 +45,28 @@ def parse_args():
     return args
 
 
+import json 
+import pickle
+
+
+def load_json_as_dict(path_to_json):
+    file = open(path_to_json, 'r')
+    data = json.load(file)
+
+    return data
+
+
+def save_as_pkl(file_path, object):
+    with open(file_path, "wb") as file:
+        pickle.dump(object, file)
+
+
+def read_pkl(file_path):
+    with open(file_path, "rb") as file:
+        object = pickle.load(file)
+    return object
+
+
 def main():
     args = parse_args()
     check_args(args)
@@ -52,23 +75,24 @@ def main():
         max_new_tokens = 2
     else:
         max_new_tokens = 20
-    
-    if (not args.use_positive_sample):
-        run = get_run(args, args.dataset_name)
-        
+
     if args.dataset_name_or_path == None:
         print(f"dataset_name_or_path not provided: Trying to load dataset and corpus from HF...")
         args.dataset_name_or_path = f"openbmb/VisRAG-Ret-Test-{args.dataset_name}"
     
-    corpus = load_corpus(args)
-    queries = load_dataset(args.dataset_name_or_path, name="queries", split="train")
+    if (not args.use_positive_sample):
+        run = get_run(args, args.dataset_name)
+        #run = my_get_run_infovqa("mp_question_to_guesses.pkl", "mp_question_to_id.pkl")
 
     if args.model_name == "gpt4o":
         from openai import OpenAI
         client = OpenAI(api_key=args.openai_api_key)
     else:
+        print(f'Loading model...')
         model, tokenizer = load_model_and_tokenizer(args)
     
+    queries = load_dataset(args.dataset_name_or_path, name="queries", split="train")
+    corpus = load_corpus(args)
     
     history_datas = []
     correct = 0
@@ -149,6 +173,24 @@ def main():
     write_history(results_output_dir, prefix, history_datas)
 
 
+def my_get_run_infovqa(question_to_guesses_path, questions_to_qid_path):
+
+    # question_to_qid = {}
+    # for d in queries:
+    #     question_to_qid[d['query']] = d['query-id']
+
+    question_to_guesses = read_pkl(question_to_guesses_path)
+    question_to_qid = read_pkl(questions_to_qid_path)
+    qid_to_guesses = {}
+    for question in question_to_guesses:
+        qid = question_to_qid[question]
+        new_dict = {}
+        for key in question_to_guesses[question]:
+            new_dict[f'{key}.jpg'] = question_to_guesses[question][key]
+        qid_to_guesses[qid] = new_dict
+    return qid_to_guesses
+
+
 def make_prefix_output_dir(output_dir, model_name, use_positive_sample, results_root_dir, dataset_name, task_type, topk):
     prefix = model_name
     results_output_dir = os.path.join(output_dir, prefix)
@@ -170,16 +212,15 @@ def make_prefix_output_dir(output_dir, model_name, use_positive_sample, results_
 
 
 def write_results(output_dir, prefix, correct, total_num):
-    result_path = os.path.join(output_dir, f"{prefix}_result.jsonl")
+    result_path = os.path.join(output_dir, f"{prefix}_result.txt")
     print(f"writing to {result_path}")
     with open(result_path, 'w') as file:
         acc = float(correct) / total_num
-        data = {'Accuracy':acc}
-        file.write(json.dumps(data)+'\n')
+        file.write(f'Accuracy: {acc}')
 
 
 def write_history(output_dir, prefix, history_datas):
-    history_path = os.path.join(output_dir, f"{prefix}_history.jsonl")
+    history_path = os.path.join(output_dir, f"{prefix}_history.txt")
     print(f"writing to {history_path}")
     with open(history_path, 'w') as file:
         for history_data in history_datas:
@@ -285,6 +326,10 @@ def get_docid_and_doc_scores(args, qid, run):
         docid = []
         doc_scores = []
         doc_cnt = 0
+        if not qid in run:
+            print(f'Missing {qid}')
+            #print(run)
+            return ['xjpn0081_p3.jpg', 'mtnh0227_p4.jpg', 'fmjb0228_p13.jpg', 'lycj0037_p5.jpg', 'hjxj0037_p1.jpg', 'mrbx0227_p14.jpg', 'kjmc0079_p2.jpg', 'fmjb0228_p14.jpg', 'mxxj0037_p1.jpg', 'jldg0227_p6.jpg'], [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
         for key, value in sorted(run[qid].items(), key=lambda item: item[1], reverse=True):
             if (doc_cnt < args.topk):
                 docid.append(key)

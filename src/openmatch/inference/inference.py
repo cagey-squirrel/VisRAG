@@ -72,7 +72,7 @@ def distributed_parallel_embedding_inference(
         collate_fn=naive_collator
     )
 
-    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=True, mode=0o777)
     
     encoded = []
     lookup_indices = []
