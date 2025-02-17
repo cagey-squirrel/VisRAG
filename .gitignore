@@ -12,6 +12,8 @@ nvembed_env
 ocr_env
 generate_output/
 MiniCPMV2.0
+*.pkl
+
 *.bin
 *.safetensors
 
